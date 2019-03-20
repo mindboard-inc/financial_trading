@@ -1,9 +1,4 @@
 
-# coding: utf-8
-
-# In[ ]:
-
-
 import pandas as pd
 import numpy as np
 import math
@@ -11,22 +6,10 @@ import random
 import datetime
 import matplotlib.pyplot as plt
 
-
-# In[ ]:
-
-
 data_dict = {i:pd.read_csv('data'+str(i)+'.csv') for i in range(len(data_ids))}
-
-
-# In[ ]:
-
 
 for m in range(len(data_dict)):
     print(len(data_dict[m].index))
-
-
-# In[ ]:
-
 
 if data_source == 'nelson':
   for m in range(77,83):
@@ -34,19 +17,11 @@ if data_source == 'nelson':
            'VOLUME_BID', 'SKEWNESS_BID', 'KURTOSIS_BID',
            'VOLUME_ASK', 'SKEWNESS_ASK', 'KURTOSIS_ASK'])
 
-
-# In[ ]:
-
-
 for i in range(len(data_dict.keys())):
   try:
     data_dict[i] = data_dict[i][data_dict[0].columns]
   except KeyError:
     data_dict[i].columns = data_dict[0].columns
-
-
-# In[ ]:
-
 
 for i,df in data_dict.items():
   if data_source == 'guru':
@@ -58,10 +33,6 @@ for i,df in data_dict.items():
     data_dict[i].set_index('DTS', drop=True, append=False, inplace=True)
     data_dict[i] = df.between_time('08:00','10:30')
   data_dict[i].reset_index(inplace=True)
-
-
-# In[ ]:
-
 
 def normalize(df):
   index_lst = []
@@ -84,10 +55,6 @@ def normalize(df):
         df.at[n, col] = df[col].iloc[pairs[0]-1]     
   return df
 
-
-# In[ ]:
-
-
 #Load data into dataframe
 for i,data in data_dict.items():
   if data_source == 'guru':
@@ -107,23 +74,11 @@ for i,data in data_dict.items():
   
 print(data_dict[0].head())
 
-
-# In[ ]:
-
-
 for i in data_dict.keys():
   data_dict[i] = data_dict[i].rename(index=str, columns={'DateTimeStamp':'DateTimeStamp','Price':'Price', 'BidAskRatio':'BidAsk_Ratio','AskBidRatio':'AskBid_Ratio','TotalMarketDepth':'TotalDepth','Depth_Bid':'Depth_Bid','Depth_Ask':'Depth_Ask',
                                                          'Skewness_BID':'MD_SKEW_BID','Skewness_ASK':'MD_SKEW_ASK','Kurtosis_BID':'MD_KURTOSIS_BID','Kurtosis_ASK':'MD_KURTOSIS_ASK'})
 
-
-# In[ ]:
-
-
 ticks = 1
-
-
-# In[ ]:
-
 
 #add LogReturn and Volatility features
 for i in data_dict.keys():
@@ -132,9 +87,6 @@ for i in data_dict.keys():
   data_dict[i]['Depth_Bid_LogReturn_Incremental'] = data_dict[i]['Depth_Bid'].rolling(2).apply(lambda x: np.log(x[-1]/x[0]))
   data_dict[i]['Depth_Ask_LogReturn_Incremental'] = data_dict[i]['Depth_Ask'].rolling(2).apply(lambda x: np.log(x[-1]/x[0]))
   data_dict[i].fillna(0, inplace=True)
-
-
-# In[ ]:
 
 
 for i in data_dict.keys():
@@ -149,13 +101,7 @@ for i in data_dict.keys():
   print(i,len(data_dict[i].index))
 
 
-# In[ ]:
-
-
 all_data = [data_dict[i] for i in range(len(data_dict))]
-
-
-# In[ ]:
 
 
 for i,df in enumerate(all_data):
@@ -165,10 +111,6 @@ for i,df in enumerate(all_data):
     all_data[i] = df.between_time('09:00','16:45')
   else:
     all_data[i] = df.between_time('08:00','10:30')
-
-
-# In[ ]:
-
 
 from scipy.signal import savgol_filter
 
@@ -197,24 +139,12 @@ for m in range(len(all_data)):
     all_data[m]['Smooth_MD_KURTOSIS_BID'] = []
     all_data[m]['Smooth_MD_KURTOSIS_ASK'] = []
 
-
-# In[ ]:
-
-
 unscaled_prices = [all_data[i]['Smooth_Price'] for i in range(len(all_data))]
-
-
-# In[ ]:
-
 
 for i in range(len(all_data)):
   all_data[i].reset_index(inplace=True)
   all_data[i] = all_data[i].replace(np.inf, 0)
   all_data[i].fillna(0, inplace=True)
-
-
-# In[ ]:
-
 
 def soft_vote_policy(qvalues,position):
   action_index,qval = qvalues.index(max(qvalues)),max(qvalues)
@@ -239,10 +169,6 @@ def soft_vote_policy(qvalues,position):
       action = 2
 
   return action
-
-
-# In[ ]:
-
 
 class Reward():
   def get_reward(self,price, new_price, position, new_position):
@@ -330,17 +256,9 @@ def update_position(action,position):
       print('uh oh')
       x = 1/0
 
-
-# In[ ]:
-
-
 for m in range(len(month_data)):
   for q in range(7):
      all_data[m]['reward'+str(q)] = 0.0
-
-
-# In[ ]:
-
 
 def add_rewards(all_data, unscaled_prices):
   for m in range(len(all_data)):
@@ -389,36 +307,16 @@ def get_qvalues(all_data,days,iterations):
   return all_data
 
 
-# In[ ]:
-
-
 for i in range(len(all_data)):
   for q in range(7):
     all_data[i]['q'+str(q)] = [0 for _ in range(len(all_data[i].index))]
 
-
-# In[ ]:
-
-
 for i in range(len(all_data)):
   print(i,len(all_data[i].index))
 
-
-# In[ ]:
-
-
 all_data = add_rewards(all_data, unscaled_prices)
-
-
-# In[ ]:
-
 
 all_data = get_qvalues(month_data,(0,len(all_data)),'all')
 
-
-# In[ ]:
-
-
 for m in range(0,len(all_data)):
     all_data[m].to_csv('day_'+str(m)+'_processed.csv')
-
